@@ -106,7 +106,7 @@ impl EguiScale for Stroke {
     fn scale(&mut self, scale: f32) {
         self.width *= scale;
         if self.width < 1.0 {
-            self.color.gamma_multiply(self.width);
+            self.color = self.color.gamma_multiply(self.width);
             self.width = 1.0;
         }
     }
@@ -243,5 +243,32 @@ impl EguiScale for Frame {
         self.corner_radius.scale(scale);
         self.shadow.scale(scale);
         self.stroke.scale(scale);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use egui::{Color32, Stroke};
+
+    #[test]
+    fn sub_pixel_stroke_fades_colour_and_clamps_width() {
+        let mut stroke = Stroke::new(0.5, Color32::from_rgba_unmultiplied(200, 100, 50, 255));
+        stroke.scale(1.0);
+        assert_eq!(stroke.width, 1.0, "width is clamped to one pixel");
+        assert!(
+            stroke.color.a() < 255,
+            "colour must fade with the sub-pixel width, got alpha {}",
+            stroke.color.a()
+        );
+    }
+
+    #[test]
+    fn stroke_at_or_above_one_pixel_keeps_colour() {
+        let colour = Color32::from_rgba_unmultiplied(200, 100, 50, 255);
+        let mut stroke = Stroke::new(2.0, colour);
+        stroke.scale(1.0);
+        assert_eq!(stroke.width, 2.0);
+        assert_eq!(stroke.color, colour);
     }
 }
