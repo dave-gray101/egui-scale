@@ -171,9 +171,13 @@ impl EguiScale for ScrollStyle {
         self.bar_inner_margin.scale(scale);
         self.bar_outer_margin.scale(scale);
         self.bar_width.scale(scale);
+        self.content_margin.scale(scale);
         self.floating_allocated_width.scale(scale);
         self.floating_width.scale(scale);
         self.handle_min_length.scale(scale);
+        self.fade.size.scale(scale);
+        // `kinetic.decay_time` is a time constant and is deliberately left unscaled.
+        self.kinetic.stop_distance.scale(scale);
     }
 }
 
