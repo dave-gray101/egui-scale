@@ -255,7 +255,11 @@ mod tests {
     fn sub_pixel_stroke_fades_colour_and_clamps_width() {
         let mut stroke = Stroke::new(0.5, Color32::from_rgba_unmultiplied(200, 100, 50, 255));
         stroke.scale(1.0);
-        assert_eq!(stroke.width, 1.0, "width is clamped to one pixel");
+        assert!(
+            (stroke.width - 1.0).abs() < f32::EPSILON,
+            "width is clamped to one pixel, got {}",
+            stroke.width
+        );
         assert!(
             stroke.color.a() < 255,
             "colour must fade with the sub-pixel width, got alpha {}",
@@ -264,11 +268,44 @@ mod tests {
     }
 
     #[test]
+    fn sub_pixel_stroke_colour_matches_gamma_multiply() {
+        let colour = Color32::from_rgba_unmultiplied(200, 100, 50, 255);
+        let mut stroke = Stroke::new(2.0, colour);
+        stroke.scale(0.25);
+        assert!(
+            (stroke.width - 1.0).abs() < f32::EPSILON,
+            "width is clamped to one pixel, got {}",
+            stroke.width
+        );
+        assert_eq!(stroke.color, colour.gamma_multiply(0.5));
+    }
+
+    #[test]
     fn stroke_at_or_above_one_pixel_keeps_colour() {
         let colour = Color32::from_rgba_unmultiplied(200, 100, 50, 255);
         let mut stroke = Stroke::new(2.0, colour);
         stroke.scale(1.0);
-        assert_eq!(stroke.width, 2.0);
+        assert!((stroke.width - 2.0).abs() < f32::EPSILON);
         assert_eq!(stroke.color, colour);
+    }
+
+    #[test]
+    fn scroll_style_scales_content_margin_fade_and_stop_distance() {
+        let before = ScrollStyle::default();
+        let mut after = before;
+        after.scale(2.0);
+
+        assert_eq!(after.content_margin.left, before.content_margin.left * 2);
+        assert_eq!(after.content_margin.top, before.content_margin.top * 2);
+        assert!((after.fade.size - before.fade.size * 2.0).abs() < 1e-4);
+        assert!((after.kinetic.stop_distance - before.kinetic.stop_distance * 2.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn scroll_style_keeps_kinetic_decay_time() {
+        let before = ScrollStyle::default();
+        let mut after = before;
+        after.scale(2.0);
+        assert!((after.kinetic.decay_time - before.kinetic.decay_time).abs() < f32::EPSILON);
     }
 }
